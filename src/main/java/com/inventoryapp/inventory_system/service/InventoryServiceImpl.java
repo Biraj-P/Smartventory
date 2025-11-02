@@ -5,8 +5,13 @@ import com.inventoryapp.inventory_system.dto.SaleRequest;
 import com.inventoryapp.inventory_system.exception.InsufficientStockException;
 import com.inventoryapp.inventory_system.exception.ProductNotFoundException;
 import com.inventoryapp.inventory_system.model.Product;
+import com.inventoryapp.inventory_system.model.SaleTransaction;
 import com.inventoryapp.inventory_system.repository.ProductRepository;
+import com.inventoryapp.inventory_system.repository.SaleTransactionRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,13 +20,19 @@ import java.util.List;
 public class InventoryServiceImpl implements InventoryService{
     // DIP: Depend on the abstraction (ProductRepository)
     private final ProductRepository productRepository;
+    private final SimpMessagingTemplate simpMessagingTemplate;
+    private final SaleTransactionRepository saleTransactionRepository;
 
     //Industry standard: Constructor Injection (preferred over @Autowired fields)
-    public InventoryServiceImpl(ProductRepository productRepository) {
+    public InventoryServiceImpl(ProductRepository productRepository, SimpMessagingTemplate simpMessagingTemplate,
+                                SaleTransactionRepository saleTransactionRepository) {
         this.productRepository = productRepository;
+        this.simpMessagingTemplate = simpMessagingTemplate;
+        this.saleTransactionRepository = saleTransactionRepository;
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true) // Clear the products cache when a new product is added
     public Product addProduct(ProductRequest productRequest){
         //Map DTO to Entity (Encapsulation)
         Product product = new Product();
@@ -34,13 +45,16 @@ public class InventoryServiceImpl implements InventoryService{
     }
 
     @Override
+    @Cacheable("products") // Cache the result of this method
     public List<Product> findAllProducts() {
         // Simple call to the persistence layer (SRP)
+        System.out.println("--- EXECUTING DB QUERY: findAllProducts() ---");
         return productRepository.findAll();
     }
 
     @Override
-    @Transactional //Essential: ensures all database operations succeed or fail together (ACID)
+    @Transactional //Essential: ensures all database operations succeed or fail together (ACID), ensures Atomicity for all saves
+    @CacheEvict(value = "products", allEntries = true) // Clear the products cache when stock is updated
     public Product updateStockAfterSale(SaleRequest saleRequest){
         //1. Find the product
         Product product = productRepository.findBySku(saleRequest.getSku());
@@ -66,8 +80,22 @@ public class InventoryServiceImpl implements InventoryService{
         //3. Update the stock quantity
         product.setStockQuantity(product.getStockQuantity() - saleRequest.getQuantitySold());
 
-        //4. Save and return
-        return productRepository.save(product);
+        //4. Save the updated product to the database
+        Product updatedProduct = productRepository.save(product);
+
+        // 5. Record the sale transaction
+        SaleTransaction transaction = new SaleTransaction();
+        transaction.setProductSku(saleRequest.getSku());
+        transaction.setQuantitySold(saleRequest.getQuantitySold());
+        transaction.setUnitPrice(product.getPrice());
+        transaction.setTotalSaleAmount(saleRequest.getQuantitySold() * product.getPrice());
+
+        saleTransactionRepository.save(transaction);
+
+        //6. Notify clients about the stock update via WebSocket
+        // Broadcast the updated product to all clients subscribed to the /topic/inventory-updates topic
+        simpMessagingTemplate.convertAndSend("/topic/inventory-updates", updatedProduct);
+        return updatedProduct;
     }
 
     @Override
