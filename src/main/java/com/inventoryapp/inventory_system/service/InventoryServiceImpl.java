@@ -9,6 +9,8 @@ import com.inventoryapp.inventory_system.model.SaleTransaction;
 import com.inventoryapp.inventory_system.repository.ProductRepository;
 import com.inventoryapp.inventory_system.repository.SaleTransactionRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,7 @@ public class InventoryServiceImpl implements InventoryService{
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true) // Clear the products cache when a new product is added
     public Product addProduct(ProductRequest productRequest){
         //Map DTO to Entity (Encapsulation)
         Product product = new Product();
@@ -42,13 +45,16 @@ public class InventoryServiceImpl implements InventoryService{
     }
 
     @Override
+    @Cacheable("products") // Cache the result of this method
     public List<Product> findAllProducts() {
         // Simple call to the persistence layer (SRP)
+        System.out.println("--- EXECUTING DB QUERY: findAllProducts() ---");
         return productRepository.findAll();
     }
 
     @Override
     @Transactional //Essential: ensures all database operations succeed or fail together (ACID), ensures Atomicity for all saves
+    @CacheEvict(value = "products", allEntries = true) // Clear the products cache when stock is updated
     public Product updateStockAfterSale(SaleRequest saleRequest){
         //1. Find the product
         Product product = productRepository.findBySku(saleRequest.getSku());
