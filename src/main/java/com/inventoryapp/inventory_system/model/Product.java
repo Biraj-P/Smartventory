@@ -8,11 +8,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 @Entity //Marks this class as an entity(table)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product {
+public class Product implements Serializable {
     @Id //Marks this field as the primary key
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,4 +24,8 @@ public class Product {
     private String name;
     private Integer stockQuantity; // The core inventory value
     private Double price;
+
+    // Optional (but good practice): Add a serial version UID
+    @Serial
+    private static final long serialVersionUID = 1L;
 }

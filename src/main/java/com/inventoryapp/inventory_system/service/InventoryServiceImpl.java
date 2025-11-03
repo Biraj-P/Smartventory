@@ -67,14 +67,15 @@ public class InventoryServiceImpl implements InventoryService{
 //        }
 // BREAKS SRP
 
+        // First validate the product exists to avoid NPE and dead code
+        if(product == null){
+            throw new ProductNotFoundException("Product not found with SKU: " + saleRequest.getSku());
+        }
+
         if(product.getStockQuantity() < saleRequest.getQuantitySold()){
             //Throw the specific business exception
             throw new InsufficientStockException("Insufficient stock for SKU " + saleRequest.getSku() +
                     " . Only " + product.getStockQuantity() + " left.");
-        }
-
-        if(product == null){
-            throw new ProductNotFoundException("Product not found with SKU: " + saleRequest.getSku());
         }
 
         //3. Update the stock quantity

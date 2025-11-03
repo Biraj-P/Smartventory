@@ -8,13 +8,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SaleTransaction {
+public class SaleTransaction implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -31,4 +33,8 @@ public class SaleTransaction {
 
     // Automatic timestamp of the transaction
     private LocalDateTime saleTimestamp = LocalDateTime.now();
+
+    // Optional (but good practice): Add a serial version UID
+    @Serial
+    private static final long serialVersionUID = 1L;
 }
