@@ -69,7 +69,6 @@ docker run -d --name pg -e POSTGRES_PASSWORD=mysecretpassword -p 5435:5432 postg
 docker run -d --name redis -p 6379:6379 redis:7
 ```
 
-
 ## API Overview
 
 Base URL: `http://localhost:8080`
@@ -81,7 +80,6 @@ Base URL: `http://localhost:8080`
   ```json
   { "name": "Wireless Mouse", "sku": "WM123", "stockQuantity": 150, "price": 25.99 }
   ```
-
 - POST `/api/inventory/sale` — record a sale, returns updated product or 400/404 on errors
   - Body example:
   
