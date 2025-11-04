@@ -8,6 +8,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 @Entity //Marks this class as an entity(table)
 @Data
 @NoArgsConstructor
@@ -21,4 +24,5 @@ public class Product {
     private String name;
     private Integer stockQuantity; // The core inventory value
     private Double price;
+
 }

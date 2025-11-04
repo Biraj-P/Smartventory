@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,4 +33,5 @@ public class SaleTransaction {
 
     // Automatic timestamp of the transaction
     private LocalDateTime saleTimestamp = LocalDateTime.now();
+
 }
