@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SaleTransaction implements Serializable {
+public class SaleTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,7 +34,4 @@ public class SaleTransaction implements Serializable {
     // Automatic timestamp of the transaction
     private LocalDateTime saleTimestamp = LocalDateTime.now();
 
-    // Optional (but good practice): Add a serial version UID
-    @Serial
-    private static final long serialVersionUID = 1L;
 }

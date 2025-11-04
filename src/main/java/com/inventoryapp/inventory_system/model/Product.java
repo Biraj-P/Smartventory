@@ -15,7 +15,7 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Product implements Serializable {
+public class Product {
     @Id //Marks this field as the primary key
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,7 +25,4 @@ public class Product implements Serializable {
     private Integer stockQuantity; // The core inventory value
     private Double price;
 
-    // Optional (but good practice): Add a serial version UID
-    @Serial
-    private static final long serialVersionUID = 1L;
 }
