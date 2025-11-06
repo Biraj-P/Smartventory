@@ -49,31 +49,38 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                //1. Disable CSRF(Cross Site Request Forgery) - not needed for stateless JWT APIs
+                // 1. Disable CSRF
                 .csrf(csrf -> csrf.disable())
-                //2. Define authorization rules (the 'Rulebook')
+
+                // 2. Define authorization rules
                 .authorizeHttpRequests(authz -> authz
-                        //PUBLIC ENDPOINTS: Allow registration and login for everyone
+                        // PUBLIC ENDPOINTS:
                         .requestMatchers("/api/auth/**").permitAll()
-                        //STATIC FILES & WEB SOCKET: Allow access for all (for React app and WebSocket connection)
                         .requestMatchers("/", "/index.html", "/static/**", "/js/**", "/css/**", "/ws-inventory/**").permitAll()
-                        //SECURE ENDPOINTS: Role-based access
-                        //ADMIN-ONLY: Only Users with ROLE_ADMIN can add new products
-                        .requestMatchers(HttpMethod.GET, "/api/inventory").hasRole("ADMIN")
-                        //USER & ADMIN: Both ROLE_USER and ROLE_ADMIN can make sales and view inventory
-                        .requestMatchers(HttpMethod.GET, "/api/inventory").hasAnyRole("USER", "ADMIN")
-                                .requestMatchers(HttpMethod.POST, "/api/inventory/sale").hasAnyRole("USER", "ADMIN")
-                        //DEFAULT: All other requests (like /actuator) must be authenticated
+
+                        // --- SECURE ENDPOINTS ---
+
+                        // ADMIN-ONLY: Only admins can CREATE new products
+                        .requestMatchers(HttpMethod.POST, "/api/inventory").hasAuthority("ROLE_ADMIN")
+
+                        // USER & ADMIN: Can READ inventory and CREATE sales
+                        .requestMatchers(HttpMethod.GET, "/api/inventory").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/inventory/sale").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+
+                        // DEFAULT:
                         .anyRequest().authenticated()
-                        )
-                //3. Set Session Management to STATELESS (don't create sessions)
-                // TODO - Use sessions to store JWT tokens for better security
+                )
+
+                // 3. Set Session Management to STATELESS
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 4. Tell Spring to use our custom AuthenticationProvider
+
+                // 4. Set our custom provider
                 .authenticationProvider(authenticationProvider())
-                // 5. Add our custom JWT filter before the standard username/password authentication filter
+
+                // 5. Add our JWT filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }
