@@ -2,6 +2,7 @@ package com.inventoryapp.inventory_system.service;
 
 import com.inventoryapp.inventory_system.dto.ProductRequest;
 import com.inventoryapp.inventory_system.dto.SaleRequest;
+import com.inventoryapp.inventory_system.dto.StockRequest;
 import com.inventoryapp.inventory_system.model.Product;
 
 import java.util.List;
@@ -19,4 +20,7 @@ public interface InventoryService {
 
     //Utility/Helper methods: Find product by SKU
     Product findBySku(String sku);
+
+    // ADMIN only: Add stock to existing product
+    Product addStock(String sku, StockRequest stockRequest);
 }

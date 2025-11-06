@@ -2,6 +2,7 @@ package com.inventoryapp.inventory_system.service;
 
 import com.inventoryapp.inventory_system.dto.ProductRequest;
 import com.inventoryapp.inventory_system.dto.SaleRequest;
+import com.inventoryapp.inventory_system.dto.StockRequest;
 import com.inventoryapp.inventory_system.exception.InsufficientStockException;
 import com.inventoryapp.inventory_system.exception.ProductNotFoundException;
 import com.inventoryapp.inventory_system.model.Product;
@@ -102,5 +103,23 @@ public class InventoryServiceImpl implements InventoryService{
     @Override
     public Product findBySku(String sku){
         return productRepository.findBySku(sku);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "products", allEntries = true)
+    public Product addStock(String sku, StockRequest stockRequest) {
+        Product product = productRepository.findBySku(sku);
+        if (product == null) {
+            throw new ProductNotFoundException("Product not found with SKU: " + sku);
+        }
+        int currentStock = product.getStockQuantity();
+        product.setStockQuantity(currentStock + stockRequest.getQuantityToAdd());
+
+        Product updatedProduct = productRepository.save(product);
+
+        // Also broadcast the updated product to all clients subscribed to the /topic/inventory-updates topic
+        simpMessagingTemplate.convertAndSend("/topic/inventory-updates", updatedProduct);
+        return updatedProduct;
     }
 }
