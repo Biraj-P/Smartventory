@@ -33,6 +33,6 @@ build/
 .vscode/
 
 ## Application Properties ##
-./src/main/resources/application.properties
+/src/main/resources/application.properties
 
-./src/main/java/com/inventoryapp/inventory_system/config/DataSeeder.java
+/src/main/java/com/inventoryapp/inventory_system/config/DataSeeder.java
