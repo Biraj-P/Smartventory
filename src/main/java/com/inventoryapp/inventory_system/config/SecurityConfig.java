@@ -1,16 +1,79 @@
 package com.inventoryapp.inventory_system.config;
 
+import com.inventoryapp.inventory_system.service.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity //Enable Spring Security's web security support
 public class SecurityConfig {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserDetailsService userDetailsService;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, UserDetailsService userDetailsService) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.userDetailsService = userDetailsService;
+    }
+
     @Bean //This bean will be used by spring security to hash(encode/validate) passwords
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    //TODO - add the main security filter chain here later
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return  authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        // This exposes the AuthenticationManager as a bean, fixing the error in AuthController
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                //1. Disable CSRF(Cross Site Request Forgery) - not needed for stateless JWT APIs
+                .csrf(csrf -> csrf.disable())
+                //2. Define authorization rules (the 'Rulebook')
+                .authorizeHttpRequests(authz -> authz
+                        //PUBLIC ENDPOINTS: Allow registration and login for everyone
+                        .requestMatchers("/api/auth/**").permitAll()
+                        //STATIC FILES & WEB SOCKET: Allow access for all (for React app and WebSocket connection)
+                        .requestMatchers("/", "/index.html", "/static/**", "/js/**", "/css/**", "/ws-inventory/**").permitAll()
+                        //SECURE ENDPOINTS: Role-based access
+                        //ADMIN-ONLY: Only Users with ROLE_ADMIN can add new products
+                        .requestMatchers(HttpMethod.GET, "/api/inventory").hasRole("ADMIN")
+                        //USER & ADMIN: Both ROLE_USER and ROLE_ADMIN can make sales and view inventory
+                        .requestMatchers(HttpMethod.GET, "/api/inventory").hasAnyRole("USER", "ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/api/inventory/sale").hasAnyRole("USER", "ADMIN")
+                        //DEFAULT: All other requests (like /actuator) must be authenticated
+                        .anyRequest().authenticated()
+                        )
+                //3. Set Session Management to STATELESS (don't create sessions)
+                // TODO - Use sessions to store JWT tokens for better security
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // 4. Tell Spring to use our custom AuthenticationProvider
+                .authenticationProvider(authenticationProvider())
+                // 5. Add our custom JWT filter before the standard username/password authentication filter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
 }
