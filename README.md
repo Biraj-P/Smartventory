@@ -1,4 +1,5 @@
 # Smartventory — Real‑Time Inventory & Sales Dashboard
+# ONGOING - v3.0
 
 Real‑time inventory tracking and sales console built with Spring Boot 3.5, JPA (PostgreSQL), WebSocket/STOMP, and Redis caching. A simple static UI (HTML/CSS/JS) consumes REST APIs and live stock updates.
 
