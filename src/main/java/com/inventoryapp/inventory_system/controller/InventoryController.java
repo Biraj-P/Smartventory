@@ -2,6 +2,7 @@ package com.inventoryapp.inventory_system.controller;
 
 import com.inventoryapp.inventory_system.dto.ProductRequest;
 import com.inventoryapp.inventory_system.dto.SaleRequest;
+import com.inventoryapp.inventory_system.dto.StockRequest;
 import com.inventoryapp.inventory_system.model.Product;
 import com.inventoryapp.inventory_system.service.InventoryService;
 import jakarta.validation.Valid;
@@ -45,6 +46,18 @@ public class InventoryController {
             return ResponseEntity.ok(updatedProduct);
         } catch (RuntimeException e) {
             //Handle business exceptions (like Insufficient stock) with a BAD REQUEST (400)
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // UPDATE: PUT /api/inventory/{sku}/stock
+    // This is new ADMIN-ONLY endpoint to add stock
+    @PutMapping("/{sku}/stock")
+    public ResponseEntity<?> addStockToProduct(@PathVariable String sku, @Valid @RequestBody StockRequest stockRequest){
+        try{
+            Product updatedProduct = inventoryService.addStock(sku, stockRequest);
+            return ResponseEntity.ok(updatedProduct);
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

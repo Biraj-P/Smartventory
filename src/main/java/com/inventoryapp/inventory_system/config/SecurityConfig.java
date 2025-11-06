@@ -62,6 +62,7 @@ public class SecurityConfig {
 
                         // ADMIN-ONLY: Only admins can CREATE new products
                         .requestMatchers(HttpMethod.POST, "/api/inventory").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/inventory/{sku}/stock").hasAuthority("ROLE_ADMIN")
 
                         // USER & ADMIN: Can READ inventory and CREATE sales
                         .requestMatchers(HttpMethod.GET, "/api/inventory").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
