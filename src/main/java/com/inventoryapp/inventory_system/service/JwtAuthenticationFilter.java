@@ -32,6 +32,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        //If the request is for an auth endpoint, just pass it to next filter
+        //without trying to validate the token
+        if(request.getServletPath().startsWith("/api/v1/auth/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 1. Get the Authorization header from the request
         final String authHeader = request.getHeader("Authorization");
 
@@ -44,7 +51,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt = authHeader.substring(7);
 
         // 4. Extract username from the token
-        final String username = jwtService.extractUsername(jwt);
+        final String username;
+        try{
+            username = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            // Handle bad token by just passing on
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // 5. Check if username is VALID and if the user is not already authenticated
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
